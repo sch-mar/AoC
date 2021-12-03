@@ -15,7 +15,7 @@ fi
 path="$y/$dd/"
 
 #check files
-for f in part1.py example input; do
+for f in solution.py example input; do
 	if ! [ -f "$path$f" ]; then
 		touch "$path$f"
 		if [ "$f" = "input" ]; then
@@ -23,4 +23,6 @@ for f in part1.py example input; do
 		fi
 	fi
 done
+
+"#!/usr/bin/env python3\n\n\n" > ${path}solution.py
 
