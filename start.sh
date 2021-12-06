@@ -24,5 +24,3 @@ for f in solution.py example input; do
 	fi
 done
 
-"#!/usr/bin/env python3\n\n\n" > ${path}solution.py
-
