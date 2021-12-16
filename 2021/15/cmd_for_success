@@ -1,0 +1,1 @@
+sudo sh -c "ulimit -s 1000000 && time python3 solution.py"

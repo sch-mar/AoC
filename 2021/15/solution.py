@@ -3,9 +3,12 @@
 from textwrap import wrap
 import heapq
 import sys
-sys.setrecursionlimit(1000000)
+# import faulthandler
+sys.setrecursionlimit(10000000)
 
-def adjnodes(m, s, dia = False):
+# faulthandler.enable()
+
+def adjnodes(m, s, dia = False, optimise=False):
     r = []
     top = s[0]-1 >= 0
     right = s[1]+1 < len(m[0])
@@ -20,6 +23,11 @@ def adjnodes(m, s, dia = False):
         if bottom and right: r.append([s[0]+1, s[1]+1])
         if bottom and left: r.append([s[0]+1, s[1]-1])
         if top and left: r.append([s[0]-1, s[1]-1])
+    if optimise:
+        for n in r:
+            # if (n[0]<len(m)/3 and n[1]>2*len(m[0])/3) or (n[0]>2*len(m)/3 and n[1]<len(m[0])/3):
+            if abs(n[0]-n[1])>1*len(m)/2:
+                r.remove(n)
     return r
 
 def get_distance(q, par, ind = 1): # queue, index, paramater
@@ -47,9 +55,12 @@ def dijkstra(m, end, q, visited=[]): # map, start, end, visited = [risk, [y, x],
         print(len(m), "x", len(m[0]))
         visited = [[False for x in range(len(m[0]))] for y in range(len(m))]
     start_d, start, origin = heapq.heappop(q)
-    for ny, nx in adjnodes(m, start):
+    for ny, nx in adjnodes(m, start): #, optimise=True):
+        # print(f"after for node: {ny, nx}")
         if not visited[ny][nx]:
+            # print("after if is not visited")
             if not is_in_queue(q, [ny, nx]):
+                # print("after is_in_queue")
                 heapq.heappush(q, (start_d+m[ny][nx], [ny, nx], start))
                 if start_d+m[ny][nx] < get_distance(q, [ny, nx]):
                     q[get_index(q, [ny, nx])] = (start_d+m[ny][nx], [ny, nx], start)
