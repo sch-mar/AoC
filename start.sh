@@ -3,14 +3,14 @@
 # today
 y=$(date '+%Y')
 d=$(date '+%-d')
-dd=$(date '+%d')
-echo "today: $y, $d, $dd"
+echo "today: $y, $d"
 
 # flags
 while getopts h?ny:dr opt; do
 	case "$opt" in
 		h|\?)
 			#show_help
+			echo "the h flag has no function yet"
 			exit 0
 			;;
 		n)
@@ -18,11 +18,20 @@ while getopts h?ny:dr opt; do
 			# find last day
 			maxyear=$(ls|egrep "[0-9]"|tail -n 1)
 			echo "maxyear: $maxyear"
-			maxday=$(ls $maxyear|egrep "[0-9]"|tail -n 1)
+			maxday=$(ls $maxyear -v|egrep "[0-9]"|tail -n 1)
 			echo "maxday: $maxday"
-			# 0<maxday<25: day=maxday+1
-			# else: day=1, y++
+			if (( 0<$maxday && $maxday<25 )); then # next day of latest year
+				echo "0<maxday<25"
+				y=$maxyear
+				d=$((${maxday//0}+1))
+				echo $y $d
+			else # MISSING: WHEN RUN ON 1st DEC
+				echo "there is no newer puzzle than the latest one, you have to wait until december : )"
+				exit 0
+			fi
 			# DO NOT ALLOW OTHER OPTS
+			# for testing only:
+			exit 0
 			;;
 		y)
 			y=$optarg
@@ -33,10 +42,12 @@ while getopts h?ny:dr opt; do
 			day=$optarg
 			# CHECK FORMAT ([1-9]{,2}), 0<day<=25
 			echo "changed day to $day"
-			# d= ..., dd=...
+			# d= ...
 			;;
 		r)
 			# RANDOM NOT YET SOLVED DAY
+			echo "the r flag has no function yet"
+			exit 0
 			;;
 	esac
 done
@@ -48,12 +59,12 @@ fi
 echo "mkdir $y"
 
 # day dir
-if ! [ -d "$y/$dd" ]; then
-	mkdir "$y/$dd"
+if ! [ -d "$y/$d" ]; then
+	mkdir "$y/$d"
 fi
-echo "mkdir $y/$dd"
+echo "mkdir $y/$d"
 
-path="$y/$dd/"
+path="$y/$d/"
 echo "path: $path"
 
 # check files
