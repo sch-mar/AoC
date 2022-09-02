@@ -6,7 +6,7 @@ d=$(date '+%-d')
 echo "today: $y, $d"
 
 # flags
-while getopts h?ny:dr opt; do
+while getopts h?ny:d:r opt; do
 	case "$opt" in
 		h|\?)
 			#show_help
@@ -34,15 +34,22 @@ while getopts h?ny:dr opt; do
 			exit 0
 			;;
 		y)
-			y=$optarg
-			# CHECK FORMAT (%d{4})
-			echo "changed year to $y"
+			# CHECK FORMAT (%d{4}, >2015, <last possible AoC)
+			echo $OPTARG
+			(( $(date '+%m') == 12 )) && yearOfMostRecentAoC=$(date '+%Y') || yearOfMostRecentAoC=$(($(date '+%Y')-1))
+			echo "yearOfMostRecentAoC=$yearOfMostRecentAoC"
+			[[ ! $OPTARG=~[0-9]{4} ]] || echo "invalid argument for y: $OPTARG" && exit 0
+			(( 2015>=$OPTARG || $OPTARG>$yearOfMostRecentAoC )) && echo "invalid argument for y: $OPTARG" && exit 0 || y=$OPTARG && echo "changed year to $y"
 			;;
 		d)
-			day=$optarg
-			# CHECK FORMAT ([1-9]{,2}), 0<day<=25
-			echo "changed day to $day"
-			# d= ...
+			d=$OPTARG
+			echo $d
+			# CHECK FORMAT ([1-9]{,2}), 0<d<=25
+			if [[ ! $d=~[1-9]{1}[0-9]? ]] || (( $d>25 )); then
+				echo "invalid argument for d: $d"
+				exit 0
+			fi
+			echo "changed day to $d"
 			;;
 		r)
 			# RANDOM NOT YET SOLVED DAY
@@ -53,15 +60,15 @@ while getopts h?ny:dr opt; do
 done
 
 # year dir
-if ! [ -d "$y" ]; then
-	mkdir "$y"
-fi
+#if ! [ -d "$y" ]; then
+#	mkdir "$y"
+#fi
 echo "mkdir $y"
 
 # day dir
-if ! [ -d "$y/$d" ]; then
-	mkdir "$y/$d"
-fi
+#if ! [ -d "$y/$d" ]; then
+#	mkdir "$y/$d"
+#fi
 echo "mkdir $y/$d"
 
 path="$y/$d/"
@@ -72,7 +79,7 @@ for f in solution.py example input; do
 	echo -n "file: $f "
 	if ! [ -f "$path$f" ]; then
 		echo "not existing"
-		touch "$path$f"
+		#touch "$path$f"
 		if [ "$f" = "input" ]; then
 			echo "curl"
 			#curl -b "session=53616c7465645f5ffa8137f2aa5ac770794b863a31ae75aea6733e8d7c49a1243091c45634a0b5781cc6017b651acff9" https://adventofcode.com/$y/day/$d/input>$path$f
