@@ -6,10 +6,10 @@ def hexbin(hex):
 def bindec(bin):
     return int(bin, base=2)
 
-def compute_input(input):
-    print("\ninput:", input)
+def decode(input):
+    print("\nparsing", input)
     input = hexbin(input)
-    print(f'binary input: {input}')
+    print(f'binary: {input}')
     
     version_bin = input[:3]
     version_dec = bindec(version_bin)
@@ -45,18 +45,27 @@ def compute_input(input):
             totalLengthInBits_bin = input[7:20]
             totalLengthInBits_dec = bindec(totalLengthInBits_bin)
             print(f'total length in bits: {totalLengthInBits_dec} ({totalLengthInBits_bin})')
+
+            subpackets = input[20:20+totalLengthInBits_dec]
+            print("subpacket block:", subpackets)
+            print("ignored:", input[20+totalLengthInBits_dec:])
         else:
             nSubpackets_bin = input[7:18]
             nSubpackets_dec = bindec(nSubpackets_bin)
             print(f'number of sub-packets: {nSubpackets_dec} ({nSubpackets_bin})')
+
+#            for i in range(nSubpackets_dec):
+#                decode(
     
 #################################################################
     
 #input = [int(i) for i in open("input").readlines()]
-input = ["D2FE28", "38006F45291200", "EE00D40C823060"]
+input = ["D2FE28", "38006F45291200", "EE00D40C823060", "8A004A801A8002F478", "620080001611562C8802118E34", "C0015000016115A2E0802F182340", "A0016C880162017C3686B18A3D4780"]
 
-for i in input:
-    compute_input(i)
+# for i in input:
+#     decode(i)
+
+decode(input[1])
 
 exit()
 
