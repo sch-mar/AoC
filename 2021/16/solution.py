@@ -7,9 +7,8 @@ def bindec(bin):
     return int(bin, base=2)
 
 def decode(input):
-    print("\nparsing", input)
-    input = hexbin(input)
-    print(f'binary: {input}')
+
+    print(f'\nparsing: {input}')
     
     version_bin = input[:3]
     version_dec = bindec(version_bin)
@@ -31,7 +30,8 @@ def decode(input):
                 LAST_GROUP = True
         print(f'numbers: {nums}')
         
-        print(f'ignored: {input[6+groups*5:]}')
+        ignored = input[6+groups*5:]
+        print("ignored:", ignored)
         
         value_bin = "".join([i[1:] for i in nums])
         value_dec = bindec(value_bin)
@@ -48,14 +48,21 @@ def decode(input):
 
             subpackets = input[20:20+totalLengthInBits_dec]
             print("subpacket block:", subpackets)
-            print("ignored:", input[20+totalLengthInBits_dec:])
+
+            ignored = input[20+totalLengthInBits_dec:]
+            print("ignored:", ignored)
+            
+            decode(subpackets)
         else:
             nSubpackets_bin = input[7:18]
             nSubpackets_dec = bindec(nSubpackets_bin)
             print(f'number of sub-packets: {nSubpackets_dec} ({nSubpackets_bin})')
-
+            
 #            for i in range(nSubpackets_dec):
-#                decode(
+            decode(
+    if ignored != "":
+        if int(ignored, base=2) != 0:
+            decode(ignored)
     
 #################################################################
     
@@ -65,7 +72,10 @@ input = ["D2FE28", "38006F45291200", "EE00D40C823060", "8A004A801A8002F478", "62
 # for i in input:
 #     decode(i)
 
-decode(input[1])
+example = 2
+print("input:", input[example])
+input[example] = hexbin(input[example])
+decode(input[example])
 
 exit()
 
