@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 def hexbin(hex):
-    return str(bin(int(hex, base=16)))[2:]
+    return str(bin(int('1'+hex, base=16)))[3:]
 
 def bindec(bin):
     return int(bin, base=2)
