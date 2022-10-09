@@ -21,6 +21,7 @@ def decode(input, totalLength=False):
     print(f'type ID: {typeID_dec} ({typeID_bin})')
 
     if typeID_dec == 4: # literal value
+        print("# literal value detected")
         LAST_GROUP = False
         groups = 0
         nums = []
@@ -39,12 +40,14 @@ def decode(input, totalLength=False):
         value_dec = bindec(value_bin)
         print(f'packet value: {value_dec} ({value_bin})')
     else: # operator packet
+        print("# operator packet detected")
         ltypeID_bin = input[cursor]
         cursor += 1
         ltypeID_dec = bindec(ltypeID_bin)
         print(f'length type ID: {ltypeID_dec} ({ltypeID_bin})')
 
         if ltypeID_bin == '0': # subpackets by length in bits
+            print("# subpackets by length in bits detected")
             totalLengthInBits_bin = input[cursor:cursor+13]
             cursor += 13
             totalLengthInBits_dec = bindec(totalLengthInBits_bin)
@@ -59,6 +62,7 @@ def decode(input, totalLength=False):
             
             decode(subpackets, totalLengthInBits_bin)
         else: # subpackets by count
+            print("# subpackets by count detected")
             nSubpackets_bin = input[cursor:cursor+11]
             cursor += 11
             nSubpackets_dec = bindec(nSubpackets_bin)
