@@ -20,49 +20,93 @@ graph = {l[0]: {'rate': int(l[1]), 'tunnels': l[2:]}for l in inp}
 duration = 26
 q = [{'AAAA': {'open': [], 'released': 0}}]
 paths = {}
+maxr = [0, 0]
+mind = 30
 
 while q:
-    cont = False
+    cont1 = False
+    cont2 = False
 
     # queue length
-    if len(q) % 1000 == 0:
-        print(len(q))
+    # if len(q) % 1000 == 0:
+        # print(len(q), len(paths))
     
     # path, values, locations
     p, v = list(q.pop(0).items())[0]
     loc1 = p[-4:-2]
     loc2 = p[-2:]
 
+    if p == 'AAAAIIDDJJDDJJEEIIFFAAGGBBHHBBHHCCGGCCFFCCEECCEE':
+        print("got it")
+        break
+
+    if len(q) > 195000:
+        break
+
     # increase released pressure
     for valve in v['open']:
         v['released'] += graph[valve]['rate']
 
-    # forget path
-    if [p[i:i+4] for i in range(0, len(p), 4)].count(loc1 + loc2) > 4 or len(set([p[i:i+4] for i in range(0, len(p), 4)])) / (len(p) / 4) < 0.72: # 0.45 for example
+    # f rget path
+    if v['released'] < maxr[0] * 9 / 10 and len(p) / 4 >= maxr[1]:
+        continue
+
+    if len(p)/4 > mind + 3:
+        continue
+
+    if [p[i:i+4] for i in range(0, len(p), 4)].count(loc1 + loc2) > 4 or len(set([p[i:i+4] for i in range(0, len(p), 4)])) / (len(p) / 4) < 1: # 0.45 for example, 0.72 for input
+        continue
+
+    if len(p) / 4 == duration and len(v['open']) != len([g for g in graph if graph[g]['rate']]):
         continue
 
     # open valve if not opened, but check neighbouring valve sizes first
     if loc1 not in v['open'] and graph[loc1]['rate'] > 0 and max([graph[adj]['rate'] for adj in graph[loc1]['tunnels'] if adj not in v['open']], default=0) <= graph[loc1]['rate']:
         v['open'].append(loc1)
-        cont = True
+        cont1 = True
     if loc2 not in v['open'] and graph[loc2]['rate'] > 0 and max([graph[adj]['rate'] for adj in graph[loc2]['tunnels'] if adj not in v['open']], default=0) <= graph[loc2]['rate']:
         v['open'].append(loc2)
-        cont = True
-    if cont:
+        cont2 = True
+    if cont1 and cont2:
         q.append({p + loc1 + loc2: deepcopy(v)})
         continue
     
     # if maximum length or all valves are open
     if len(p) / 4 == duration or len(v['open']) == len([g for g in graph if graph[g]['rate']]):
         paths[p] = v['released']#{p: v})
+        if v['released'] > maxr[1]:
+            maxr = [v['released'], len(p)/4]
+        if len(p)/4 < mind:
+            mind = len(p)/4
+        print(p, v['released'], len(q))
         continue
 
     # move
-    for adj in graph[loc1]['tunnels']:
-        q.append({p + adj: deepcopy(v)})
+    # valve opened at 1:
+    if cont1:
+        for adj in graph[loc2]['tunnels']:
+            q.append({p + v['open'][-1] + adj: deepcopy(v)})
+    # valve opened at 2
+    elif cont2:
+        for adj in graph[loc1]['tunnels']:
+            q.append({p + adj + v['open'][-1]: deepcopy(v)})
+    # no valve opened
+    else:
+        for adj1 in graph[loc1]['tunnels']:
+            for adj2 in graph[loc2]['tunnels']:
+                q.append({p + adj1 + adj2: deepcopy(v)})
 
+# finish pressure release
+for path in paths:
+    for rate in [graph[g]['rate'] for g in graph if graph[g]['rate']]:
+            paths[path] += rate * (duration - len(path) / 2)
 
+# print best paths
+for path, released in sorted(paths.items(), key=lambda item: item[1], reverse=True)[:20]:
+    print('-'.join([path[i]+path[i+1] for i in range(0, len(path), 2)]), released)
+print(len(paths))
 
+exit()
 
 ## PART 1
 
