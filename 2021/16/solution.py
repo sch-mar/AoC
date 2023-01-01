@@ -1,91 +1,147 @@
-#!/usr/bin/env python3
+#! /usr/bin python3
+
+import math
 
 def hexbin(hex):
     return str(bin(int('1'+hex, base=16)))[3:]
 
+def binhex(bin):
+    return str(hex(int(bin, base=2)))[2:]
+
 def bindec(bin):
     return int(bin, base=2)
 
-def decode(input, totalLength=False):
-    cursor = 0
-    print(f'\nparsing: {input}')
+#######
+
+class Packet:
+    def __init__(self, hex: str = None, bin: str = None):
+        # init = 'hex' if hex else 'bin'
+        # print("new packet", init)
+        # input()
+        self.hex = hex if hex else binhex(bin)
+        self.bin = bin if bin else hexbin(hex)
+        p = 0
+        # packet version
+        self.version = bindec(self.bin[:p+3])
+        p += 3
+        # packet type ID
+        self.typeID = bindec(self.bin[p:p+3])
+        p += 3
+        self.type = 'lit' if self.typeID == 4 else 'op'
+        if self.type == 'lit':
+            # literal packet
+            self.value = ''
+            while True:
+                group = self.bin[p:p+5]
+                self.value += group[1:]
+                p += 5
+                if group[0] == '0':
+                    break
+            self.value = bindec(self.value)
+        else:
+            # operator packet
+            self.lengthID = self.bin[p]
+            p += 1
+            if self.lengthID == '0':
+                self.sub_length = bindec(self.bin[p:p+15])
+                p += 15
+                sub_end = p + self.sub_length
+                # sub packets
+                self.sub_packet_bin = self.bin[p:p+self.sub_length]
+                self.sub_packets = []
+                while True:
+                    self.sub_packets.append(Packet(bin=self.bin[p:]))
+                    p += self.sub_packets[-1].p
+                    if p == sub_end:
+                        break
+            else:
+                self.sub_count = bindec(self.bin[p:p+11])
+                p += 11
+                # sub_packets
+                self.sub_packets = []
+                for _ in range(self.sub_count):
+                    self.sub_packets.append(Packet(bin=self.bin[p:]))
+                    p += self.sub_packets[-1].p
+            # packet value
+            match self.typeID:
+                case 0:
+                    self.type += '_sum'
+                    self.value = sum([packet.value for packet in self.sub_packets])
+                case 1:
+                    self.type += '_prod'
+                    self.value = math.prod([packet.value for packet in self.sub_packets])
+                case 2:
+                    self.type += '_min'
+                    self.value = min([packet.value for packet in self.sub_packets])
+                case 3:
+                    self.type += '_max'
+                    self.value = max([packet.value for packet in self.sub_packets])
+                case 5:
+                    self.type += '_gt'
+                    self.value = 1 if self.sub_packets[0].value > self.sub_packets[1].value else 0
+                case 6:
+                    self.type += '_lt'
+                    self.value = 1 if self.sub_packets[0].value < self.sub_packets[1].value else 0
+                case 7:
+                    self.type += '_eq'
+                    self.value = 1 if self.sub_packets[0].value == self.sub_packets[1].value else 0
+        # terminal pointer
+        self.p = p
+
+    def __str__(self):
+        s = f"v:{self.version},t:{self.type}"
+        if self.type == 'lit':
+            s += f",value:{self.value}"
+        else:
+            s += f",i:{self.lengthID}"
+            if self.lengthID == '0':
+                s += f",l:{self.sub_length},c:{len(self.sub_packets)}"
+            else:
+                s += f",c:{self.sub_count}"
+        s += f",p:{self.p}"
+        return s
+
+    def print_hex(self):
+        print(self.hex)
     
-    version_bin = input[cursor:cursor+3]
-    cursor += 3
-    version_dec = bindec(version_bin)
-    print(f'version: {version_dec} ({version_bin})')
-    
-    typeID_bin = input[cursor:cursor+3]
-    cursor += 3
-    typeID_dec = bindec(typeID_bin)
-    print(f'type ID: {typeID_dec} ({typeID_bin})')
+    def print_bin(self):
+        print(self.bin)
 
-    if typeID_dec == 4: # literal value
-        print("# literal value detected")
-        LAST_GROUP = False
-        groups = 0
-        nums = []
-        
-        while LAST_GROUP == False:
-            nums.append(input[cursor+groups*5:cursor+5+groups*5])
-            groups += 1
-            if nums[-1][0] == '0':
-                LAST_GROUP = True
-        print(f'numbers: {nums}')
-        
-        rest = input[cursor+groups*5:]
-        print("rest:", rest)
-        
-        value_bin = "".join([i[1:] for i in nums])
-        value_dec = bindec(value_bin)
-        print(f'packet value: {value_dec} ({value_bin})')
-    else: # operator packet
-        print("# operator packet detected")
-        ltypeID_bin = input[cursor]
-        cursor += 1
-        ltypeID_dec = bindec(ltypeID_bin)
-        print(f'length type ID: {ltypeID_dec} ({ltypeID_bin})')
+    def print(self):
+        print(self)
+        # check for inner packets
+        if self.type == 'op':
+            for packet in self.sub_packets:
+                packet.print()
 
-        if ltypeID_bin == '0': # subpackets by length in bits
-            print("# subpackets by length in bits detected")
-            totalLengthInBits_bin = input[cursor:cursor+13]
-            cursor += 13
-            totalLengthInBits_dec = bindec(totalLengthInBits_bin)
-            print(f'total length in bits: {totalLengthInBits_dec} ({totalLengthInBits_bin})')
+    def version_sum(self):
+        vs = self.version
+        if self.type == 'op':
+            for packet in self.sub_packets:
+                vs += packet.version_sum()
+        return vs
 
-            subpackets = input[cursor:cursor+totalLengthInBits_dec]
-            cursor += totalLengthInBits_dec
-            print("subpacket block:", subpackets)
 
-            rest = input[cursor:]
-            print("rest:", rest)
-            
-            decode(subpackets, totalLengthInBits_bin)
-        else: # subpackets by count
-            print("# subpackets by count detected")
-            nSubpackets_bin = input[cursor:cursor+11]
-            cursor += 11
-            nSubpackets_dec = bindec(nSubpackets_bin)
-            print(f'number of sub-packets: {nSubpackets_dec} ({nSubpackets_bin})')
-            
-            # for i in range(nSubpackets_dec):
 
-    if rest != "":
-        if int(rest, base=2) != 0:
-            decode(rest)
-    
-#################################################################
-    
-#input = [int(i) for i in open("input").readlines()]
-input = ["D2FE28", "38006F45291200", "EE00D40C823060", "8A004A801A8002F478", "620080001611562C8802118E34", "C0015000016115A2E0802F182340", "A0016C880162017C3686B18A3D4780"]
+# example = 'D2FE28'
+# example = '38006F45291200'
+# example = 'EE00D40C823060'
+# example = '8A004A801A8002F478'
+# example = '620080001611562C8802118E34'
+# example = 'C0015000016115A2E0802F182340'
+# example = 'A0016C880162017C3686B18A3D4780'
+# Part2
+# example = 'C200B40A82'
+# example = '04005AC33890'
+# example = '880086C3E88112'
+# example = 'CE00C43D881120'
+# example = 'D8005AC2A8F0'
+# example = 'F600BC2D8F'
+# example = '9C005AC2F8F0'
+# example = '9C0141080250320F1802104A08'
+# outerPacket = Packet(hex=example)
 
-# for i in input:
-#     decode(i)
-
-example = 1
-print("input:", input[example])
-input[example] = hexbin(input[example])
-decode(input[example])
-
-exit()
-
+inp = open("../../input/2021/16/input", 'r').read().splitlines()[0]
+outerPacket = Packet(hex=inp)
+print("Part 1:", outerPacket.version_sum())
+print("Part 2:", outerPacket.value)
